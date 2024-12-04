@@ -11,6 +11,8 @@ def main():
                         help='Maximum length of diff to analyze (default: 2048)')
     parser.add_argument('--commit-len', type=int, default=100, 
                         help='Maximum length of commit message (default: 100)')
+    parser.add_argument('--model-name', type=str, default = "llama-3.1-8b-instant",
+                        help='Groq Model Name (default: llama-3.1-8b-instant)')
     parser.add_argument('--api-key', type=str, 
                         help='Groq API key (can also use GROQ_API_KEY env variable)')
     
@@ -33,7 +35,8 @@ def main():
     commit_message = generate_commit_message(
         diff, 
         max_commit_length=args.commit_len, 
-        api_key=api_key
+        api_key=api_key,
+        model_name=args.model_name
     )
     
     if commit_message:

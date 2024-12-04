@@ -1,4 +1,3 @@
-```markdown
 # Easy Commit
 
 AI-powered Git commit message generator using Groq API.
