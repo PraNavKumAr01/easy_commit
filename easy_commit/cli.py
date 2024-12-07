@@ -2,7 +2,7 @@ import argparse
 import os
 import subprocess
 import shlex
-from .generator import get_staged_diff, generate_commit_message
+from generator import get_staged_diff, generate_commit_message
 
 def main():
     # Parse command-line arguments
@@ -39,23 +39,46 @@ def main():
         model_name=args.model_name
     )
     
-    if commit_message:
-        try:
-            # Construct the git commit command
-            command = f"git commit -m {shlex.quote(commit_message)}"
-            print(f"Command ready to run: {command}")
+    while True:
+        if commit_message:
+            try:
+                # Display the generated commit message
+                print(f"Generated commit message: {commit_message}")
+                
+                # Prompt user for action
+                action = input("Press 'enter' to commit, 'c' to cancel, or 'r' to revise the message: ").strip().lower()
+                
+                if action == 'enter':
+                    # Construct the git commit command
+                    command = f"git commit -m {shlex.quote(commit_message)}"
+                    print(f"Command ready to run: {command}")
+                    
+                    # Execute the command
+                    subprocess.run(command, shell=True, check=True)
+                    print(f"Committed with message: {commit_message}")
+                    break
+                
+                elif action == 'c':
+                    print("Operation cancelled.")
+                    break
+                
+                elif action == 'r':
+                    optional_prompt = input("Enter your custom prompt for the commit message: ").strip()
+                    commit_message = generate_commit_message(
+                        diff, 
+                        max_commit_length=args.commit_len, 
+                        api_key=api_key,
+                        model_name=args.model_name,
+                        optional_prompt=optional_prompt
+                    )
+                
+                else:
+                    print("Invalid option. Please enter 'enter', 'c', or 'r'.")
             
-            # Prompt the user to confirm before running
-            input("Press Enter to execute the command, or Ctrl+C to cancel...")
-            
-            # Execute the command
-            subprocess.run(command, shell=True, check=True)
-            print(f"Committed with message: {commit_message}")
-        except KeyboardInterrupt:
-            print("\nOperation cancelled.")
-        except subprocess.CalledProcessError:
-            print("Failed to commit. Please resolve any git issues.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
-    else:
-        print("Could not generate a commit message.")
+            except subprocess.CalledProcessError:
+                print("Failed to commit. Please resolve any git issues.")
+            except Exception as e:
+                print(f"An error occurred: {e}")
+        else:
+            print("Could not generate a commit message.")
+            break

@@ -20,7 +20,7 @@ def get_staged_diff(max_diff_length=2048):
         print(f"Error retrieving staged git diff: {e}")
         return ""
 
-def generate_commit_message(diff, max_commit_length=100, api_key=None, model_name = "llama-3.1-8b-instant"):
+def generate_commit_message(diff, max_commit_length=100, api_key=None, model_name = "llama-3.1-8b-instant", optional_prompt = None):
     """
     Generate a commit message based on staged git diff using Groq API.
     
@@ -54,6 +54,8 @@ def generate_commit_message(diff, max_commit_length=100, api_key=None, model_nam
                     - If staged changes contain multiple files, concisely summarize
                     
                     Code Diff: {diff}
+
+                    Here are some important instructions from the user : {optional_prompt} (Skip if None)
                     
                     Start directly with the commit message, nothing before or after it."""
                 }
