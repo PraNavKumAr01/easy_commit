@@ -2,7 +2,7 @@ import argparse
 import os
 import subprocess
 import shlex
-from generator import get_staged_diff, generate_commit_message
+from .generator import get_staged_diff, generate_commit_message
 
 def main():
     # Parse command-line arguments
