@@ -1,5 +1,5 @@
 import subprocess
-from groq import Groq
+from .providers import generate_claude_message, generate_groq_message, generate_openai_message, generate_cohere_message, generate_together_message
 
 def get_staged_diff(max_diff_length=2048):
     """
@@ -19,56 +19,75 @@ def get_staged_diff(max_diff_length=2048):
     except subprocess.CalledProcessError as e:
         print(f"Error retrieving staged git diff: {e}")
         return ""
-
-def generate_commit_message(diff, max_commit_length=100, api_key=None, model_name = "llama-3.1-8b-instant", optional_prompt = None):
+    
+def generate_commit_message(diff, max_commit_length=100, api_key=None, provider="groq", optional_prompt=None):
     """
-    Generate a commit message based on staged git diff using Groq API.
+    Generate a commit message based on staged git diff using multiple AI providers.
     
     Args:
         diff (str): Git diff to analyze
         max_commit_length (int): Maximum length of commit message
-        api_key (str): Groq API key
+        api_key (str): API key for the selected provider
+        provider (str): AI provider and model (e.g., "openai", "openai/gpt-3.5-turbo", 
+                        "groq", "groq/llama-3.1-8b-instant", "claude", "claude/claude-3-haiku")
+        optional_prompt (str, optional): Additional user instructions
     
     Returns:
         str: Generated commit message
     """
-    if not api_key:
-        raise ValueError("Groq API key is required")
-    
-    client = Groq(api_key=api_key)
-    
-    try:
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a Git commit message generator. Create concise, descriptive commit messages."
-                },
-                {
-                    "role": "user",
-                    "content": f"""Generate a concise, one-line Git commit message based on these code changes. 
-                    Guidelines:
-                    - Short summary (max {max_commit_length} characters)
-                    - Use imperative mood
-                    - Focus on the primary change
-                    - If staged changes contain multiple files, concisely summarize
-                    
-                    Code Diff: {diff}
 
-                    Here are some important instructions from the user : {optional_prompt} (Skip if None)
-                    
-                    Start directly with the commit message, nothing before or after it."""
-                }
-            ],
-            model=model_name,
-            temperature=0.6,
-        )
-        
-        commit_message = chat_completion.choices[0].message.content.strip()
-        
-        # Truncate if needed
-        return commit_message[:max_commit_length]
+    # Default provider configurations
+    provider_configs = {
+        'openai': {
+            'model': 'gpt-3.5-turbo',
+            'api_func': generate_openai_message,
+            'api_key_env': 'OPENAI_API_KEY'
+        },
+        'groq': {
+            'model': 'llama-3.1-8b-instant',
+            'api_func': generate_groq_message,
+            'api_key_env': 'GROQ_API_KEY'
+        },
+        'claude': {
+            'model': 'claude-3-haiku-20240307',
+            'api_func': generate_claude_message,
+            'api_key_env': 'ANTHROPIC_API_KEY'
+        },
+        'together': {
+            'model': 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+            'api_func': generate_together_message,
+            'api_key_env': 'TOGETHER_API_KEY'
+        },
+        'cohere': {
+            'model': 'command-r-plus-08-2024',
+            'api_func': generate_cohere_message,
+            'api_key_env': 'COHERE_API_KEY'
+        }
+    }
+
+    # Parse provider and model
+    parts = provider.lower().split('/', 1)
+    base_provider = parts[0]
     
-    except Exception as e:
-        print(f"Error generating commit message: {e}")
-        return ""
+    if base_provider not in provider_configs:
+        raise ValueError(f"Unsupported provider: {base_provider}")
+    
+    # Use specific model if provided, otherwise use default
+    model = parts[1] if len(parts) > 1 else provider_configs[base_provider]["model"]
+    
+    # Validate API key
+    if not api_key:
+        import os
+        api_key = os.getenv(provider_configs[base_provider]["api_key_env"])
+        if not api_key:
+            raise ValueError(f"API key required for {base_provider}. Pass directly with --api-key or set environment variable.")
+
+    # Generate commit message using appropriate provider
+    config = provider_configs[base_provider]
+    return config['api_func'](
+        diff=diff, 
+        api_key=api_key, 
+        model=model, 
+        max_length=max_commit_length, 
+        optional_prompt=optional_prompt
+    )

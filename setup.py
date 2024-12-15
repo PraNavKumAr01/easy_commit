@@ -2,10 +2,14 @@ from setuptools import setup, find_packages
 
 setup(
     name='easy-commit',
-    version='0.1.6',
+    version='0.1.7',
     packages=find_packages(),
     install_requires=[
         'groq',
+        'openai',
+        'anthropic',
+        'together',
+        'cohere',
         'argparse'
     ],
     entry_points={

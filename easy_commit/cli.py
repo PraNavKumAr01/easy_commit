@@ -2,27 +2,63 @@ import argparse
 import os
 import subprocess
 import shlex
+import json
 from .generator import get_staged_diff, generate_commit_message
+
+CONFIG_PATH = os.path.expanduser("~/.config/easy_commit/config.json")
+
+def load_config():
+    """Load configuration from file."""
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
+    return {}
+
+def save_config(provider_name, api_key):
+    """Save configuration to file."""
+    config = {"provider_name": provider_name, "api_key": api_key}
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=4)
+
+def extract_provider_name(provider):
+    """Extract the provider name from the full provider string."""
+    return provider.split('/')[0]
 
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Generate AI-powered Git commit messages')
     parser.add_argument('--trunc-diff', type=int, default=2048, 
                         help='Maximum length of diff to analyze (default: 2048)')
-    parser.add_argument('--commit-len', type=int, default=100, 
-                        help='Maximum length of commit message (default: 100)')
-    parser.add_argument('--model-name', type=str, default = "llama-3.1-8b-instant",
-                        help='Groq Model Name (default: llama-3.1-8b-instant)')
+    parser.add_argument('--commit-len', type=int, default=150, 
+                        help='Maximum length of commit message (default: 150)')
+    parser.add_argument('--provider', type=str, default="groq/llama-3.1-8b-instant",
+                        help='Provider and Model Name (default: groq/llama-3.1-8b-instant)')
     parser.add_argument('--api-key', type=str, 
-                        help='Groq API key (can also use GROQ_API_KEY env variable)')
+                        help='Provider API key (can also use PROVIDER_API_KEY env variable)')
+    parser.add_argument('--save-config', action='store_true', 
+                        help='Save provider and API key as default configuration')
     
     args = parser.parse_args()
     
-    # Get API key from environment or argument
-    api_key = args.api_key or os.environ.get('GROQ_API_KEY')
-    if not api_key:
-        print("Error: Groq API key not provided. Set GROQ_API_KEY environment variable or use --api-key.")
-        return
+    # Load existing config
+    config = load_config()
+    
+    # Determine provider and API key
+    provider = args.provider
+    api_key = args.api_key
+    
+    # If no API key provided, check config
+    if not api_key and config.get('provider_name') == extract_provider_name(provider):
+        api_key = config.get('api_key')
+    
+    # Save config if requested and both provider and API key are provided
+    if args.save_config and provider and api_key:
+        save_config(extract_provider_name(provider), api_key)
+        print(f"Saved default configuration for provider: {provider}")
     
     # Get staged diff
     diff = get_staged_diff(max_diff_length=args.trunc_diff)
@@ -36,7 +72,7 @@ def main():
         diff, 
         max_commit_length=args.commit_len, 
         api_key=api_key,
-        model_name=args.model_name
+        provider=provider
     )
     
     while True:
@@ -48,7 +84,7 @@ def main():
                 # Prompt user for action
                 action = input("Press 'enter' to commit, 'c' to cancel, or 'r' to revise the message: ").strip().lower()
                 
-                if action == 'enter':
+                if action == '':
                     # Construct the git commit command
                     command = f"git commit -m {shlex.quote(commit_message)}"
                     print(f"Command ready to run: {command}")
@@ -68,7 +104,7 @@ def main():
                         diff, 
                         max_commit_length=args.commit_len, 
                         api_key=api_key,
-                        model_name=args.model_name,
+                        provider=provider,
                         optional_prompt=optional_prompt
                     )
                 
