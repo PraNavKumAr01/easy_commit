@@ -1,4 +1,5 @@
 import subprocess
+from tqdm import tqdm
 from .providers import generate_claude_message, generate_groq_message, generate_openai_message, generate_cohere_message, generate_together_message
 
 def get_staged_diff(max_diff_length=2048):
@@ -15,12 +16,46 @@ def get_staged_diff(max_diff_length=2048):
         staged_diff = subprocess.check_output(['git', 'diff', '--staged'], 
                                               stderr=subprocess.STDOUT, 
                                               text=True)
-        return "Staged Changes : " + staged_diff[:max_diff_length]
+        return ["Staged Changes : " + staged_diff[:max_diff_length]]
     except subprocess.CalledProcessError as e:
         print(f"Error retrieving staged git diff: {e}")
         return ""
     
-def generate_commit_message(diff, max_commit_length=100, api_key=None, provider="groq", optional_prompt=None):
+def get_staged_diff_chunks(max_diff_length=2048, overlap=100):
+    """
+    Retrieve git diff for staged changes and split into chunks with overlap.
+    
+    Args:
+        max_diff_length (int): Maximum length of each diff chunk
+        overlap (int): Number of characters to overlap between chunks
+    
+    Returns:
+        list: List of diff chunks with overlapping context
+    """
+    try:
+        staged_diff = subprocess.check_output(['git', 'diff', '--staged'], 
+                                              stderr=subprocess.STDOUT, 
+                                              text=True)
+        
+        if not staged_diff:
+            return []
+        
+        diff_chunks = []
+        for i in range(0, len(staged_diff), max_diff_length - (2 * overlap)):
+            # Calculate start and end indices with overlap
+            start = max(0, i - overlap)
+            end = min(i + max_diff_length, len(staged_diff))
+            
+            chunk = staged_diff[start:end]
+            diff_chunks.append(chunk)
+        
+        return diff_chunks
+    
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving staged git diff: {e}")
+        return []
+    
+def generate_commit_message(diffs, max_commit_length=100, api_key=None, provider="groq", optional_prompt=None):
     """
     Generate a commit message based on staged git diff using multiple AI providers.
     
@@ -84,10 +119,36 @@ def generate_commit_message(diff, max_commit_length=100, api_key=None, provider=
 
     # Generate commit message using appropriate provider
     config = provider_configs[base_provider]
-    return config['api_func'](
-        diff=diff, 
-        api_key=api_key, 
-        model=model, 
-        max_length=max_commit_length, 
-        optional_prompt=optional_prompt
-    )
+    
+    if len(diffs) > 1:
+
+        temp_commit_messages = []
+
+        for diff in tqdm(diffs, desc='Analysing Diffs'):
+            commit_message =  config['api_func'](
+                diff=diff, 
+                api_key=api_key, 
+                model=model, 
+                max_length=max_commit_length, 
+                optional_prompt=optional_prompt,
+            )
+
+            temp_commit_messages.append(commit_message)
+
+        return config['api_func'](
+            diff=temp_commit_messages, 
+            api_key=api_key, 
+            model=model, 
+            max_length=max_commit_length, 
+            optional_prompt=optional_prompt,
+        ) 
+
+    else:
+    
+        return config['api_func'](
+            diff=diffs, 
+            api_key=api_key, 
+            model=model, 
+            max_length=max_commit_length, 
+            optional_prompt=optional_prompt,
+        )

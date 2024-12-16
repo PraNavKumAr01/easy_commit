@@ -3,7 +3,7 @@ import os
 import subprocess
 import shlex
 import json
-from .generator import get_staged_diff, generate_commit_message
+from .generator import get_staged_diff_chunks, generate_commit_message
 
 CONFIG_PATH = os.path.expanduser("~/.config/easy_commit/config.json")
 
@@ -31,9 +31,11 @@ def extract_provider_name(provider):
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Generate AI-powered Git commit messages')
-    parser.add_argument('--trunc-diff', type=int, default=2048, 
+    parser.add_argument('--trunc-diff', action='store_true',
+                        help='Include all diffs or truncate to diff-size')
+    parser.add_argument('--diff-size', type=int, default=2048, 
                         help='Maximum length of diff to analyze (default: 2048)')
-    parser.add_argument('--commit-len', type=int, default=150, 
+    parser.add_argument('--commit-len', type=int, default=200, 
                         help='Maximum length of commit message (default: 150)')
     parser.add_argument('--provider', type=str, default="groq/llama-3.1-8b-instant",
                         help='Provider and Model Name (default: groq/llama-3.1-8b-instant)')
@@ -61,7 +63,10 @@ def main():
         print(f"Saved default configuration for provider: {provider}")
     
     # Get staged diff
-    diff = get_staged_diff(max_diff_length=args.trunc_diff)
+    diff = get_staged_diff_chunks(max_diff_length=args.diff_size)
+
+    if args.trunc_diff:
+        diff = diff[0]
     
     if not diff:
         print("No staged changes to commit.")

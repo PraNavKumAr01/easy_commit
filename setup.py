@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='easy-commit',
-    version='0.1.7',
+    version='0.2.0',
     packages=find_packages(),
     install_requires=[
         'groq',
