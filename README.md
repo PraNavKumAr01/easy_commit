@@ -25,7 +25,7 @@ easy-commit --provider groq --api-key your-api-key --save-config
 Arguments:
 - `--diff-size` : Maximum length of diff to analyze (default: 2048)
 - `--trunc-diff`: Flag to include multiple diffs or truncate the diff (default: False)
-`Easy commit now supports bigger diffs, it splits those diffs into chunks and summarizes all the changes into a single message. use it when you have a lot of code changes, but be carefull as this might use a lot of tokens`
+#### Easy commit now supports bigger diffs, it splits those diffs into chunks and summarizes all the changes into a single message. use it when you have a lot of code changes, but be carefull as this might use a lot of tokens
 - `--commit-len`: Maximum length of commit message (default: 100)
 - `--provider` :  API provider to use for LLM functionality (default: groq)
 - `--api-key` : API key for the selected LLM provider
