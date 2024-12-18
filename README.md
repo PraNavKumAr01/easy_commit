@@ -1,6 +1,6 @@
 # Easy Commit
 
-AI-powered Git commit message generator using Groq API.
+AI-powered Git commit message generator
 
 ## Installation
 
@@ -24,11 +24,13 @@ easy-commit --provider groq --api-key your-api-key --save-config
 
 Arguments:
 - `--diff-size` : Maximum length of diff to analyze (default: 2048)
-- `--trunc-diff`: Flag to include multiple diffs or truncate the diff (default: False) `use it when you can a lot of code changes, but be carefull as this might use a lot of tokens`
+- `--trunc-diff`: Flag to include multiple diffs or truncate the diff (default: False) `use it when you have a lot of code changes, but be carefull as this might use a lot of tokens`
 - `--commit-len`: Maximum length of commit message (default: 100)
 - `--provider` :  API provider to use for LLM functionality (default: groq)
 - `--api-key` : API key for the selected LLM provider
 - `--save-config` : Flag to save the provided configuration of easier accesability later (default: False)
+
+#### Check [providers.yaml](https://github.com/PraNavKumAr01/easy_commit/blob/main/providers.yaml) for the providers supported and their default models.
 
 ## Examples
 ```bash
