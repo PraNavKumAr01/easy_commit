@@ -16,19 +16,19 @@ git add .
 ```
 It is neccesary to first stage all your changes. This picks up the code diffs from the staged changes.
 
-### Set your Groq API key as an environment variable:
+### Save your default provider configuration
+#### You can set the provider and api-key once when you first run it, after that you will be able to run it in any project or IDE.
 ```bash
-export GROQ_API_KEY=your_groq_api_key_here
+easy-commit --provider groq --api-key your-api-key --save-config
 ```
 
-### Or pass it as a command-line argument:
-```bash
-easy-commit --api-key your_groq_api_key_here
-```
-
-Optional arguments:
-- `--trunc-diff`: Maximum length of diff to analyze (default: 2048)
+Arguments:
+- `--diff-size` : Maximum length of diff to analyze (default: 2048)
+- `--trunc-diff`: Flag to include multiple diffs or truncate the diff (default: False) `use it when you can a lot of code changes, but be carefull as this might use a lot of tokens`
 - `--commit-len`: Maximum length of commit message (default: 100)
+- `--provider` :  API provider to use for LLM functionality (default: groq)
+- `--api-key` : API key for the selected LLM provider
+- `--save-config` : Flag to save the provided configuration of easier accesability later (default: False)
 
 ## Examples
 ```bash
@@ -38,7 +38,7 @@ Yes! Thats actually all it takes. You will be shown the commit message, and prom
 
 ### With arguments
 ```bash
-easy-commit --trunc-diff 1024 --commit-len 50 --model-name "llama3-8b-8192"
+easy-commit --diff-size 1024 --commit-len 50 --provider groq --api-key your-api-key
 ```
 
 ## Requirements
