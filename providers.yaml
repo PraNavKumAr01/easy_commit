@@ -1,0 +1,11 @@
+providers:
+  openai:
+    default_model: gpt-3.5-turbo
+  groq:
+    default_model: llama-3.1-8b-instant
+  claude:
+    default_model: claude-3-haiku-20240307
+  together:
+    default_model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
+  cohere:
+    default_model: command-r-plus-08-2024
