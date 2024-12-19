@@ -10,7 +10,8 @@ setup(
         'anthropic',
         'together',
         'cohere',
-        'argparse'
+        'argparse',
+        'colorama'
     ],
     entry_points={
         'console_scripts': [
