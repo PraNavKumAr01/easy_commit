@@ -4,8 +4,12 @@ import subprocess
 import shlex
 import json
 from .generator import get_staged_diff_chunks, generate_commit_message
+from colorama import Fore, Style, init
 
 CONFIG_PATH = os.path.expanduser("~/.config/easy_commit/config.json")
+
+# Initialize colorama
+init(autoreset=True)
 
 def load_config():
     """Load configuration from file."""
@@ -60,7 +64,7 @@ def main():
     # Save config if requested and both provider and API key are provided
     if args.save_config and provider and api_key:
         save_config(extract_provider_name(provider), api_key)
-        print(f"Saved default configuration for provider: {provider}")
+        print(Fore.GREEN + f"Saved default configuration for provider: {provider}")
     
     # Get staged diff
     diff = get_staged_diff_chunks(max_diff_length=args.diff_size)
@@ -69,7 +73,7 @@ def main():
         diff = diff[0]
     
     if not diff:
-        print("No staged changes to commit.")
+        print(Fore.RED + "No staged changes to commit.")
         return
     
     # Generate commit message
@@ -84,27 +88,27 @@ def main():
         if commit_message:
             try:
                 # Display the generated commit message
-                print(f"Generated commit message: {commit_message}")
+                print(Fore.CYAN + f"Generated commit message: {commit_message}")
                 
                 # Prompt user for action
-                action = input("Press 'enter' to commit, 'c' to cancel, or 'r' to revise the message: ").strip().lower()
+                action = input(Fore.YELLOW + "Press 'enter' to commit, 'c' to cancel, or 'r' to revise the message: ").strip().lower()
                 
                 if action == '':
                     # Construct the git commit command
                     command = f"git commit -m {shlex.quote(commit_message)}"
-                    print(f"Command ready to run: {command}")
+                    print(Fore.GREEN +  f"Command ready to run: {command}")
                     
                     # Execute the command
                     subprocess.run(command, shell=True, check=True)
-                    print(f"Committed with message: {commit_message}")
+                    print(Fore.GREEN +  f"Committed with message: {commit_message}")
                     break
                 
                 elif action == 'c':
-                    print("Operation cancelled.")
+                    print(Fore.RED + "Operation cancelled.")
                     break
                 
                 elif action == 'r':
-                    optional_prompt = input("Enter your custom prompt for the commit message: ").strip()
+                    optional_prompt = input(Fore.YELLOW + "Enter your custom prompt for the commit message: ").strip()
                     commit_message = generate_commit_message(
                         diff, 
                         max_commit_length=args.commit_len, 
@@ -114,12 +118,12 @@ def main():
                     )
                 
                 else:
-                    print("Invalid option. Please enter 'enter', 'c', or 'r'.")
+                    print(Fore.RED + "Invalid option. Please enter 'enter', 'c', or 'r'.")
             
             except subprocess.CalledProcessError:
-                print("Failed to commit. Please resolve any git issues.")
+                print(Fore.RED + "Failed to commit. Please resolve any git issues.")
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(Fore.RED + f"An error occurred: {e}")
         else:
-            print("Could not generate a commit message.")
+            print(Fore.RED + "Could not generate a commit message.")
             break
